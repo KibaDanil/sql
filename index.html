@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Базы данных и SQL — интерактивный курс</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 20px; color: #2d3748;
+    -webkit-user-select: none; -ms-user-select: none; user-select: none;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+  .card {
+    background: white; border-radius: 16px; padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3); margin-bottom: 20px;
+  }
+  h1 { font-size: 26px; margin-bottom: 8px; color: #1a202c; line-height: 1.3; }
+  h2 { font-size: 21px; margin-bottom: 14px; color: #2d3748; }
+  h3 { font-size: 17px; margin-bottom: 10px; color: #4a5568; }
+  .subtitle { color: #718096; margin-bottom: 22px; font-size: 15px; line-height: 1.6; }
+  .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 24px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.4s ease; }
+  .theory {
+    background: #f7fafc; border-left: 4px solid #667eea; padding: 20px;
+    border-radius: 8px; margin-bottom: 20px; line-height: 1.75; font-size: 15px;
+  }
+  .theory p { margin-bottom: 10px; }
+  .theory p:last-child { margin-bottom: 0; }
+  .theory ul, .theory ol { margin: 8px 0 10px 22px; }
+  .theory li { margin-bottom: 6px; }
+  .theory code {
+    background: #edf2f7; padding: 2px 6px; border-radius: 4px;
+    font-family: 'Courier New', monospace; color: #c53030; font-size: 14px;
+  }
+  .theory pre {
+    background: #1a202c; color: #e2e8f0; padding: 16px; border-radius: 8px;
+    overflow-x: auto; margin: 12px 0;
+    font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.55;
+  }
+  .theory pre code { background: none; color: inherit; padding: 0; }
+  .tag {
+    display: inline-block; background: #667eea; color: white;
+    padding: 4px 12px; border-radius: 20px; font-size: 11px;
+    font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .tag.ddl { background: #ed8936; }
+  .tag.danger { background: #e53e3e; }
+  .tag.model { background: #38a169; }
+  .tag.no-sql { background: #805ad5; }
+  .tag.intro { background: #319795; }
+  input[type="text"] {
+    width: 100%; padding: 14px 16px; font-size: 16px;
+    border: 2px solid #e2e8f0; border-radius: 10px;
+    outline: none; transition: border-color 0.2s; font-family: inherit;
+    -webkit-user-select: text; user-select: text;
+  }
+  input[type="text"]:focus { border-color: #667eea; }
+  .option {
+    display: block; padding: 14px 18px; border: 2px solid #e2e8f0;
+    border-radius: 10px; margin-bottom: 10px; cursor: pointer;
+    transition: all 0.2s; font-size: 15px; line-height: 1.5;
+  }
+  .option:hover { border-color: #667eea; background: #f7fafc; }
+  .option.selected { border-color: #667eea; background: #ebf4ff; }
+  .option.correct { border-color: #48bb78; background: #f0fff4; }
+  .option.wrong { border-color: #f56565; background: #fff5f5; }
+  .option.locked { cursor: default; }
+  .option.locked:hover { background: inherit; border-color: inherit; }
+  .option.locked.correct:hover { background: #f0fff4; border-color: #48bb78; }
+  .option.locked.wrong:hover { background: #fff5f5; border-color: #f56565; }
+  .btn {
+    padding: 14px 28px; font-size: 16px; font-weight: 600; border: none;
+    border-radius: 10px; cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+    background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-secondary { background: #e2e8f0; color: #4a5568; }
+  .btn-secondary:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+  .actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 22px; }
+  .actions.between { justify-content: space-between; }
+  .feedback {
+    padding: 16px 18px; border-radius: 10px; margin-top: 16px;
+    font-size: 14.5px; line-height: 1.65; display: none;
+  }
+  .feedback.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  .feedback.success { background: #f0fff4; border-left: 4px solid #48bb78; color: #276749; }
+  .feedback.error { background: #fff5f5; border-left: 4px solid #f56565; color: #c53030; }
+  .feedback .fb-title { font-weight: 700; margin-bottom: 6px; display: block; }
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin: 24px 0; }
+  .stat { background: #f7fafc; padding: 20px; border-radius: 12px; text-align: center; }
+  .stat-value { font-size: 32px; font-weight: 700; color: #667eea; }
+  .stat-label { font-size: 13px; color: #718096; margin-top: 4px; }
+  .review-item { padding: 16px 18px; border-radius: 10px; margin-bottom: 12px; background: #f7fafc; line-height: 1.6; }
+  .review-item.correct-item { border-left: 4px solid #48bb78; }
+  .review-item.wrong-item { border-left: 4px solid #f56565; }
+  .review-question { font-weight: 600; margin-bottom: 8px; font-size: 15px; }
+  .review-detail { font-size: 14px; color: #4a5568; margin-top: 6px; }
+  .review-detail .label { color: #718096; font-weight: 600; }
+  .review-explain { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #cbd5e0; font-size: 13.5px; color: #4a5568; font-style: italic; }
+  .hidden { display: none !important; }
+  .name-badge {
+    display: inline-block; background: #ebf4ff; color: #667eea;
+    padding: 6px 14px; border-radius: 20px; font-size: 14px;
+    font-weight: 600; margin-bottom: 16px;
+  }
+  .score-big { text-align: center; padding: 28px; }
+  .score-big .value {
+    font-size: 72px; font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .score-big .label { font-size: 18px; color: #718096; margin-top: 8px; }
+  .module-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+  .module-counter { font-size: 13px; color: #a0aec0; font-weight: 600; }
+  .start-intro { background: #f7fafc; border-radius: 12px; padding: 20px; margin-bottom: 22px; line-height: 1.7; font-size: 15px; color: #4a5568; }
+  .start-intro ul { margin: 10px 0 0 22px; }
+  .start-intro li { margin-bottom: 6px; }
+  .step-label { display: inline-block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #a0aec0; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<script>
+const LESSONS = [
+  {
+    tag: 'Введение', tagClass: 'intro',
+    theory: `<h3>База данных простыми словами</h3>
+      <p>Представьте, что у вас есть огромная записная книжка, где записаны все студенты школы: имя, возраст, класс, оценки. Если записей сотни, найти что-то вручную становится сложно.</p>
+      <p><b>База данных (БД)</b> — это такая «умная записная книжка» для компьютера: она хранит информацию в организованном виде и позволяет очень быстро находить нужное, добавлять новое и изменять старое.</p>
+      <p>Примеры из жизни: список контактов в телефоне, каталог фильмов на Netflix, история заказов в интернет-магазине — всё это работает на базах данных.</p>
+      <p>Главное отличие БД от простого файла — <b>структура</b>: данные разложены «по полочкам», и компьютер знает, где что лежит.</p>`,
+    question: 'Зачем нужны базы данных вместо обычных файлов?',
+    options: ['Чтобы было красивее выглядеть','Чтобы быстро находить, добавлять и изменять данные в больших объёмах','Чтобы занять больше места на диске','Чтобы не пользоваться компьютером'],
+    correct: 1,
+    explanation: 'Главная польза БД — организация данных и скорость работы с ними. Файл может хранить информацию, но искать в нём что-то среди тысяч записей долго. База данных справляется с этим за доли секунды.'
+  },
+  {
+    tag: 'Введение', tagClass: 'intro',
+    theory: `<h3>Как работает база данных</h3>
+      <p>Внутри базы данных информация хранится в <b>таблицах</b> — как в Excel. Каждая таблица описывает один тип объектов: например, «Студенты», «Книги», «Заказы».</p>
+      <p>Когда вы что-то ищете, база не просматривает всё подряд, как человек просматривал бы книгу. Она использует <b>индексы</b> — специальные «указатели», которые позволяют мгновенно находить нужную запись, как оглавление в книге.</p>
+      <p>Чтобы попросить базу данных что-то найти, добавить или изменить, используют специальный язык — <b>SQL</b>. Именно его мы и будем учить дальше.</p>`,
+    question: 'Что помогает базе данных быстро находить нужные записи среди тысяч строк?',
+    options: ['Алфавитный порядок','Индексы (специальные указатели)','Случайный выбор','Вмешательство пользователя'],
+    correct: 1,
+    explanation: 'Индексы — это как оглавление книги: вместо перелистывания всех страниц компьютер сразу открывает нужное место. Без индексов поиск по большим таблицам был бы медленным.'
+  },
+  {
+    tag: 'Введение', tagClass: '',
+    theory: `<h3>Что такое база данных</h3>
+      <p><b>База данных (БД)</b> — это организованная совокупность данных, предназначенная для длительного хранения, постоянного обновления и использования.</p>
+      <p>Простой пример: список контактов в телефоне, где для каждого человека хранятся имя, номер и email. Все записи организованы по одной схеме — это и делает их базой данных, а не хаотичным набором файлов.</p>
+      <p>Ключевое отличие БД от обычного файла (например, Excel) — <b>структурированность</b>: данные организованы так, чтобы их можно было быстро находить, фильтровать и изменять.</p>`,
+    question: 'Что такое база данных?',
+    options: ['Программа для создания таблиц','Организованное хранилище данных для их хранения и обработки','Язык программирования для работы с числами','Разновидность Excel-файла'],
+    correct: 1,
+    explanation: 'База данных — это именно хранилище организованных данных. Программа для управления ими — это уже СУБД (другое понятие). SQL — язык, а Excel-файл — просто файл, но не база данных в строгом смысле.'
+  },
+  {
+    tag: 'Введение', tagClass: '',
+    theory: `<h3>Что такое СУБД</h3>
+      <p><b>СУБД</b> (система управления базами данных) — это <b>программное обеспечение</b>, через которое мы работаем с базой данных: создаём таблицы, добавляем, ищем и изменяем данные, настраиваем доступ.</p>
+      <p>Без СУБД база данных была бы просто набором файлов на диске. СУБД берёт на себя:</p>
+      <ul><li>Создание и изменение структуры (таблиц, связей).</li><li>Обеспечение целостности данных (чтобы не было «битых» записей).</li><li>Управление доступом (кто что может читать или менять).</li><li>Восстановление после сбоев.</li></ul>
+      <p><b>Примеры СУБД:</b> PostgreSQL, MySQL, Microsoft SQL Server, Oracle, SQLite.</p>`,
+    question: 'Что из перечисленного является СУБД?',
+    options: ['Excel-файл со студентами','PostgreSQL','Язык SQL','HTML-страница'],
+    correct: 1,
+    explanation: 'PostgreSQL — это СУБД. SQL — это язык запросов (инструмент, через который мы общаемся с СУБД). Excel-файл — просто файл, а HTML-страница вообще не связана с хранением данных.'
+  },
+  {
+    tag: 'Виды БД', tagClass: 'model',
+    theory: `<h3>Реляционные базы данных</h3>
+      <p><b>Реляционные БД</b> — самый распространённый тип. Данные в них хранятся в <b>таблицах</b>, связанных между собой через <b>ключи</b>.</p>
+      <p>Каждая таблица — как лист Excel со строками и столбцами. Связи между таблицами позволяют не дублировать данные и строить сложные запросы.</p>
+      <p><b>Примеры:</b> PostgreSQL, MySQL, SQLite, Microsoft SQL Server, Oracle.</p>
+      <p>Именно с реляционными БД работает классический язык <b>SQL</b>.</p>`,
+    question: 'Какая из перечисленных СУБД является реляционной?',
+    options: ['MongoDB','Redis','PostgreSQL','Файловая система'],
+    correct: 2,
+    explanation: 'PostgreSQL — классическая реляционная СУБД: данные в таблицах, связи через ключи, язык — SQL. MongoDB и Redis — нереляционные (NoSQL). Файловая система — это вообще не СУБД.'
+  },
+  {
+    tag: 'Виды БД', tagClass: 'no-sql',
+    theory: `<h3>Нереляционные (NoSQL) базы данных</h3>
+      <p><b>NoSQL</b> (Not Only SQL) — общее название баз данных, устроенных иначе, чем таблицы. Основные подтипы:</p>
+      <ul><li><b>Документные</b> — данные хранятся в виде документов (обычно JSON). Пример: <b>MongoDB</b>.</li><li><b>Ключ-значение</b> — каждому ключу соответствует значение. Пример: <b>Redis</b>.</li><li><b>Колоночные</b> — данные организованы по столбцам. Пример: Cassandra.</li><li><b>Графовые</b> — данные как узлы и связи между ними. Пример: Neo4j.</li></ul>
+      <p>NoSQL выбирают, когда нужна гибкая структура или очень высокая скорость, а строгая табличная модель не обязательна.</p>`,
+    question: 'Какая из перечисленных баз данных относится к нереляционным (NoSQL)?',
+    options: ['MySQL','PostgreSQL','MongoDB','SQLite'],
+    correct: 2,
+    explanation: 'MongoDB — документная NoSQL-база: данные хранятся в виде JSON-документов, а не в таблицах. MySQL, PostgreSQL и SQLite — реляционные СУБД, работающие с таблицами.'
+  },
+  {
+    tag: 'Виды БД', tagClass: 'model',
+    theory: `<h3>Иерархические и сетевые базы данных</h3>
+      <p>Эти модели появились раньше реляционной, но встречаются и сегодня.</p>
+      <p><b>Иерархическая БД</b> — данные как дерево «родитель → потомок». У каждой записи только один родитель.</p>
+      <ul><li>Пример: <b>файловая система</b> (папки и вложенные файлы), <b>реестр Windows</b>.</li></ul>
+      <p><b>Сетевая БД</b> — более гибкая версия иерархической: у записи может быть несколько родителей (граф связей). Сегодня используется редко.</p>
+      <p>Обе модели быстрые, но негибкие — жёсткая структура затрудняет изменение данных.</p>`,
+    question: 'Какая структура данных у иерархической базы данных?',
+    options: ['Таблица','Дерево (родитель → потомок)','Документ JSON','Граф без корня'],
+    correct: 1,
+    explanation: 'Иерархическая БД организована как дерево: у каждой записи ровно один родитель, но может быть много потомков. Таблица — у реляционных, JSON — у документных, граф без корня — у сетевых и графовых.'
+  },
+  {
+    tag: 'Модель данных', tagClass: 'model',
+    theory: `<h3>Таблицы и столбцы. Типы данных</h3>
+      <p>Реляционная база состоит из <b>таблиц</b>. Таблица — это как лист Excel.</p>
+      <p><b>Столбец (поле)</b> — задаёт свойство объекта и его <b>тип данных</b>. Популярные типы:</p>
+      <ul><li><code>INT</code> — целое число (возраст, id).</li><li><code>VARCHAR(n)</code> — строка длиной до n символов (имя, email).</li><li><code>TEXT</code> — длинный текст (комментарий, статья).</li><li><code>DATE</code> — дата (например, <code>2024-05-01</code>).</li><li><code>BOOLEAN</code> — истина/ложь (активен ли аккаунт).</li></ul>
+      <p>Тип данных определяет, какие значения можно хранить в столбце и какие операции допустимы.</p>`,
+    question: 'Какой тип данных лучше всего подойдёт для хранения имени студента?',
+    options: ['INT','DATE','VARCHAR','BOOLEAN'],
+    correct: 2,
+    explanation: 'Имя — это текст, поэтому подойдёт VARCHAR (строка). INT — только числа, DATE — даты, BOOLEAN — истина/ложь. Для длинного текста подошёл бы TEXT, но имя короткое, так что VARCHAR — оптимальный вариант.'
+  },
+  {
+    tag: 'Модель данных', tagClass: 'model',
+    theory: `<h3>Строки (записи)</h3>
+      <p><b>Строка (запись)</b> — один объект со всеми его значениями. Если таблица — это список, то строка — один пункт списка.</p>
+      <pre><code>id | name | age\n---|------|-----\n1  | Анна | 20\n2  | Иван | 22</code></pre>
+      <p>Здесь две строки: одна про Анну (ей 20), вторая про Ивана (ему 22). Вся информация об одном студенте хранится в одной строке.</p>`,
+    question: 'Что представляет собой одна строка в таблице?',
+    options: ['Название таблицы','Один объект со всеми его значениями','Тип данных столбца','Связь с другой таблицей'],
+    correct: 1,
+    explanation: 'Строка (запись) содержит полный набор значений для одного объекта: например, все данные одного студента. Название таблицы — это имя таблицы, тип данных — характеристика столбца, а связь с другой таблицей задаётся через внешний ключ.'
+  },
+  {
+    tag: 'Модель данных', tagClass: 'model',
+    theory: `<h3>Первичный и внешний ключи</h3>
+      <p><b>Первичный ключ (PRIMARY KEY)</b> — столбец, значения которого уникальны для каждой строки. Он однозначно идентифицирует запись. В таблице не может быть двух строк с одинаковым первичным ключом.</p>
+      <p><b>Внешний ключ (FOREIGN KEY)</b> — столбец, который ссылается на первичный ключ в другой таблице. Через внешние ключи таблицы связываются.</p>
+      <p>Пример: в таблице <code>Оценки</code> столбец <code>student_id</code> ссылается на <code>id</code> в таблице <code>Студенты</code>.</p>`,
+    question: 'Может ли в таблице быть две строки с одинаковым значением первичного ключа?',
+    options: ['Да, если данные совпадают','Нет, первичный ключ уникален для каждой строки','Только если ключ состоит из одного столбца','Зависит от СУБД'],
+    correct: 1,
+    explanation: 'По определению первичный ключ уникален. Именно поэтому он используется для однозначной идентификации строки. Попытка вставить дубль вызовет ошибку.'
+  },
+  {
+    tag: 'SELECT', tagClass: '',
+    theory: `<h3>Базовый запрос: SELECT и FROM</h3>
+      <p><code>SELECT</code> указывает, <i>какие столбцы</i> показать, <code>FROM</code> — <i>из какой таблицы</i> брать данные.</p>
+      <pre><code>SELECT * FROM Students;</code></pre>
+      <p><code>*</code> означает «все столбцы». Если нужны только некоторые — их перечисляют через запятую:</p>
+      <pre><code>SELECT name, age FROM Students;</code></pre>`,
+    question: 'Какой запрос выведет все столбцы из таблицы Students?',
+    options: ['SELECT Students FROM *;','GET * FROM Students;','SELECT * FROM Students;','SELECT ALL Students;'],
+    correct: 2,
+    explanation: 'Правильный синтаксис — SELECT * FROM Students. Звёздочка означает «все столбцы», а FROM указывает таблицу. Команды GET в SQL нет, а SELECT ALL — неверный синтаксис для этой цели.'
+  },
+  {
+    tag: 'WHERE', tagClass: '',
+    theory: `<h3>Фильтрация строк: WHERE</h3>
+      <p><code>WHERE</code> оставляет только те строки, которые удовлетворяют условию.</p>
+      <pre><code>SELECT * FROM Students WHERE city = 'Москва';</code></pre>
+      <p>Операторы сравнения: <code>=</code>, <code>&lt;&gt;</code> (не равно), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>.</p>
+      <p>Логические операторы: <code>AND</code> (оба условия верны), <code>OR</code> (хотя бы одно), <code>NOT</code> (отрицание).</p>`,
+    question: 'Что делает оператор WHERE в запросе?',
+    options: ['Сортирует строки','Фильтрует строки по условию','Группирует строки','Создаёт новую таблицу'],
+    correct: 1,
+    explanation: 'WHERE фильтрует: остаются только строки, для которых условие истинно. Сортировка — это ORDER BY, группировка — GROUP BY, создание таблицы — CREATE TABLE.'
+  },
+  {
+    tag: 'WHERE', tagClass: '',
+    theory: `<h3>Составные условия: AND и OR</h3>
+      <p><code>AND</code> — истинно, только если <b>оба</b> условия верны.<br><code>OR</code> — истинно, если верно <b>хотя бы одно</b>.</p>
+      <pre><code>SELECT * FROM Students\nWHERE age > 18 AND city = 'Москва';</code></pre>
+      <p>Этот запрос найдёт совершеннолетних студентов именно из Москвы.</p>`,
+    question: 'Какое условие найдёт студентов, которым больше 18 ИЛИ которые живут в Москве?',
+    options: ["WHERE age > 18 AND city = 'Москва'","WHERE age > 18 OR city = 'Москва'","WHERE age > 18 + city = 'Москва'","WHERE age > 18 NOT city = 'Москва'"],
+    correct: 1,
+    explanation: '«ИЛИ» в SQL — это OR. AND означает, что нужны оба условия одновременно, а нам нужно хотя бы одно. Запись через + и NOT с city — неверный синтаксис.'
+  },
+  {
+    tag: 'ORDER BY', tagClass: '',
+    theory: `<h3>Сортировка результата: ORDER BY</h3>
+      <p><code>ORDER BY</code> сортирует результат. По умолчанию — по возрастанию (<code>ASC</code>). Для убывания добавляют <code>DESC</code>.</p>
+      <pre><code>SELECT * FROM Students ORDER BY age DESC;</code></pre>
+      <p>Можно сортировать по нескольким столбцам: <code>ORDER BY city ASC, age DESC</code>.</p>`,
+    question: 'Как отсортировать студентов по возрасту от старшего к младшему?',
+    options: ['ORDER BY age ASC','ORDER BY age DESC','SORT age DESC','ORDER DESC age'],
+    correct: 1,
+    explanation: 'DESC — descending, «по убыванию». ASC — ascending, по возрастанию (по умолчанию). Команды SORT в SQL нет, а ORDER DESC age — неверный порядок слов.'
+  },
+  {
+    tag: 'INSERT', tagClass: '',
+    theory: `<h3>Добавление данных: INSERT INTO</h3>
+      <p><code>INSERT INTO</code> добавляет новую строку в таблицу.</p>
+      <pre><code>INSERT INTO Students (name, age, city)\nVALUES ('Пётр', 21, 'Казань');</code></pre>
+      <p>Порядок столбцов в скобках должен совпадать с порядком значений в <code>VALUES</code>.</p>`,
+    question: 'Какой запрос добавит студента Ивана 20 лет в таблицу Students (столбцы name, age)?',
+    options: ["INSERT INTO Students VALUES ('Иван', 20);","ADD Student ('Иван', 20) TO Students;","INSERT Students (name, age) VALUES 'Иван', 20;","UPDATE Students SET name = 'Иван', age = 20;"],
+    correct: 0,
+    explanation: "Правильно: INSERT INTO Students VALUES ('Иван', 20). Такой вариант допустим, если в таблице ровно два столбца. ADD — не команда SQL, INSERT без INTO в этом виде неверен, а UPDATE меняет существующую строку, а не добавляет новую."
+  },
+  {
+    tag: 'UPDATE', tagClass: 'danger',
+    theory: `<h3>Изменение данных: UPDATE</h3>
+      <p><code>UPDATE</code> меняет значения в существующих строках.</p>
+      <pre><code>UPDATE Students SET age = 23 WHERE name = 'Иван';</code></pre>
+      <p><b>Критически важно:</b> всегда используйте <code>WHERE</code>. Без него изменения применятся ко <b>всем</b> строкам таблицы.</p>`,
+    question: 'Что произойдёт, если выполнить запрос UPDATE Students SET age = 30; без WHERE?',
+    options: ['Ничего не изменится','Возраст станет 30 у всех студентов','СУБД выдаст синтаксическую ошибку','Удалится таблица Students'],
+    correct: 1,
+    explanation: 'Без WHERE команда UPDATE затрагивает все строки таблицы. Это классическая и очень опасная ошибка. Поэтому перед выполнением UPDATE всегда проверяйте WHERE.'
+  },
+  {
+    tag: 'DELETE', tagClass: 'danger',
+    theory: `<h3>Удаление данных: DELETE</h3>
+      <p><code>DELETE</code> удаляет строки, удовлетворяющие условию.</p>
+      <pre><code>DELETE FROM Students WHERE id = 5;</code></pre>
+      <p>Та же история, что и с UPDATE: <b>без WHERE удалятся все строки таблицы</b>.</p>
+      <p>Не путайте с <code>TRUNCATE</code>: он удаляет все данные сразу, но оставляет структуру таблицы.</p>`,
+    question: 'Как безопасно удалить только студента с id = 5?',
+    options: ['DELETE FROM Students;','DELETE Students WHERE id = 5;','DELETE FROM Students WHERE id = 5;','REMOVE FROM Students WHERE id = 5;'],
+    correct: 2,
+    explanation: 'Правильный синтаксис — DELETE FROM таблица WHERE условие. Вариант без WHERE удалит всё, без FROM — синтаксическая ошибка, REMOVE в SQL не используется.'
+  },
+  {
+    tag: 'CREATE TABLE', tagClass: 'ddl',
+    theory: `<h3>Создание таблицы: CREATE TABLE</h3>
+      <p><code>CREATE TABLE</code> создаёт новую таблицу и описывает её столбцы и типы данных.</p>
+      <pre><code>CREATE TABLE Students (\n  id INT PRIMARY KEY,\n  name VARCHAR(100),\n  age INT\n);</code></pre>
+      <p>Популярные типы: <code>INT</code> (целое), <code>VARCHAR(n)</code> (строка длиной до n), <code>DATE</code> (дата), <code>BOOLEAN</code> (истина/ложь).</p>`,
+    question: 'Какой командой создаётся новая таблица в базе данных?',
+    options: ['MAKE TABLE','CREATE TABLE','NEW TABLE','ADD TABLE'],
+    correct: 1,
+    explanation: 'CREATE TABLE — команда языка определения данных (DDL). Остальные варианты в SQL не существуют.'
+  },
+  {
+    tag: 'ALTER', tagClass: 'ddl',
+    theory: `<h3>Изменение структуры: ALTER TABLE</h3>
+      <p><code>ALTER TABLE</code> меняет уже существующую таблицу: добавляет, удаляет или переименовывает столбцы.</p>
+      <pre><code>ALTER TABLE Students ADD email VARCHAR(100);</code></pre>
+      <p>Это добавит в таблицу Students новый столбец email.</p>`,
+    question: 'Как добавить новый столбец email в таблицу Students?',
+    options: ['ADD COLUMN email TO Students;','ALTER TABLE Students ADD email VARCHAR(100);','UPDATE Students ADD email;','CREATE COLUMN email IN Students;'],
+    correct: 1,
+    explanation: 'Изменение структуры — это ALTER TABLE ... ADD. UPDATE меняет данные внутри строк, а не структуру. Команды ADD COLUMN ... TO и CREATE COLUMN ... IN в таком виде не существуют.'
+  },
+  {
+    tag: 'Агрегация', tagClass: '',
+    theory: `<h3>Агрегатные функции: COUNT, SUM, AVG</h3>
+      <p>Агрегатные функции вычисляют одно значение по множеству строк:</p>
+      <ul><li><code>COUNT(*)</code> — количество строк</li><li><code>SUM(column)</code> — сумма</li><li><code>AVG(column)</code> — среднее</li><li><code>MIN</code> / <code>MAX</code> — минимум и максимум</li></ul>
+      <pre><code>SELECT COUNT(*) FROM Students;</code></pre>`,
+    question: 'Какая функция посчитает количество всех строк в таблице?',
+    options: ['SUM(*)','COUNT(*)','AVG(*)','MAX(*)'],
+    correct: 1,
+    explanation: 'COUNT(*) считает строки. SUM и AVG работают с числовыми значениями столбца, а не с количеством строк. MAX(*) — некорректное применение.'
+  },
+  {
+    tag: 'GROUP BY', tagClass: '',
+    theory: `<h3>Группировка: GROUP BY</h3>
+      <p><code>GROUP BY</code> разбивает строки на группы, и агрегатная функция считается для каждой группы отдельно.</p>
+      <pre><code>SELECT city, COUNT(*) AS cnt\nFROM Students\nGROUP BY city;</code></pre>
+      <p>Этот запрос покажет количество студентов в каждом городе.</p>`,
+    question: 'Нужно посчитать количество студентов в каждом городе. Какой оператор нужен?',
+    options: ['ORDER BY','GROUP BY','WHERE','HAVING'],
+    correct: 1,
+    explanation: 'Чтобы посчитать агрегат по группам (по городам), нужен GROUP BY. ORDER BY сортирует, WHERE фильтрует строки до группировки, HAVING фильтрует уже группы.'
+  },
+  {
+    tag: 'HAVING', tagClass: '',
+    theory: `<h3>Фильтрация групп: HAVING</h3>
+      <p><code>WHERE</code> фильтрует строки <i>до</i> группировки, а <code>HAVING</code> — уже сгруппированные данные <i>после</i>.</p>
+      <pre><code>SELECT city, AVG(age) AS avg_age\nFROM Students\nGROUP BY city\nHAVING AVG(age) > 20;</code></pre>
+      <p>Покажет только те города, где средний возраст студентов больше 20.</p>`,
+    question: 'Чем HAVING отличается от WHERE?',
+    options: ['Ничем, это синонимы','HAVING фильтрует группы после GROUP BY, WHERE — строки до группировки','HAVING работает только с числами','WHERE работает только с текстом'],
+    correct: 1,
+    explanation: 'WHERE применяется к отдельным строкам до группировки. HAVING — к результатам группировки (к группам). Поэтому условия на агрегатные функции (например, AVG(age) > 20) пишут в HAVING.'
+  },
+  {
+    tag: 'JOIN', tagClass: '',
+    theory: `<h3>Объединение таблиц: INNER JOIN</h3>
+      <p><code>JOIN</code> соединяет строки двух таблиц по общему полю.</p>
+      <pre><code>SELECT Students.name, Grades.grade\nFROM Students\nJOIN Grades ON Students.id = Grades.student_id;</code></pre>
+      <p><code>INNER JOIN</code> (по умолчанию просто <code>JOIN</code>) вернёт только строки, у которых есть совпадение в <b>обеих</b> таблицах.</p>`,
+    question: 'Что вернёт INNER JOIN, если у студента нет ни одной оценки?',
+    options: ['Студента с пустой оценкой (NULL)','Этот студент не попадёт в результат','Ошибку выполнения','Студента с оценкой 0'],
+    correct: 1,
+    explanation: 'INNER JOIN оставляет только совпадающие пары строк. Если у студента нет оценок, пары не образуется, и студент в результат не попадёт. Чтобы он остался с NULL, нужен LEFT JOIN.'
+  },
+  {
+    tag: 'Безопасность', tagClass: 'danger',
+    theory: `<h3>Как приложение соединяется с базой данных</h3>
+      <p><b>В вебе нельзя подключать БД напрямую из браузера.</b> Любой пользователь откроет DevTools (F12) и увидит логин и пароль. Правильная схема:</p>
+      <pre><code>Браузер (HTML/JS) → Сервер (Node.js/PHP) → База данных</code></pre>
+      <p>Сервер принимает запросы, сам ходит в БД и возвращает результат. Браузер вообще не знает, что существует какая-то база данных.</p>
+      <p>Для десктопа проще: можно использовать <code>SQLite</code> — вся база в одном файле, без установки сервера.</p>`,
+    question: 'Почему нельзя подключаться к базе данных напрямую из JavaScript в браузере?',
+    options: ['Браузер не поддерживает SQL','Пользователь увидит логин и пароль от БД в коде страницы','Это слишком медленно','JavaScript не умеет отправлять запросы'],
+    correct: 1,
+    explanation: 'Клиентский код полностью виден пользователю. Если там хранятся учётные данные БД, злоумышленник получит прямой доступ к базе. Поэтому доступ к БД всегда идёт через сервер (backend).'
+  }
+];
+// ============================================================
+//  ЗАЩИТА ОТ КОПИРОВАНИЯ
+// ============================================================
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('copy', e => {
+  const tag = e.target.tagName;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+});
+document.addEventListener('cut', e => {
+  const tag = e.target.tagName;
+  if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+});
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && ['c','x','a'].includes(e.key.toLowerCase())) {
+    const tag = e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+  }
+});
+
+const state = { studentName: '', currentIndex: 0, answers: [] };
+const app = document.getElementById('app');
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================
+//  СТАРТ
+// ============================================================
+function renderStart() {
+  app.innerHTML = `
+    <div class="card">
+      <h1>📚 Базы данных и SQL</h1>
+      <p class="subtitle">Интерактивный курс для начинающих</p>
+      <div class="start-intro">
+        <b>Что вас ждёт:</b>
+        <ul>
+          <li>${LESSONS.length} модулей: сначала теория, затем отдельное задание</li>
+          <li>Подробное пояснение к каждому ответу</li>
+          <li>Итоговый тест по всем темам и разбор ошибок</li>
+          <li>Копирование текста отключено — отвечайте своими знаниями 🙂</li>
+        </ul>
+      </div>
+      <input type="text" id="nameInput" placeholder="Ваше имя" maxlength="40" autocomplete="off">
+      <div class="actions">
+        <button class="btn" id="startBtn">Начать обучение →</button>
+      </div>
+    </div>`;
+
+  const input = document.getElementById('nameInput');
+  const btn = document.getElementById('startBtn');
+  input.focus();
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+  btn.addEventListener('click', () => {
+    const name = input.value.trim();
+    if (name.length < 2) {
+      input.style.borderColor = '#f56565';
+      input.placeholder = 'Введите имя (минимум 2 символа)';
+      return;
+    }
+    state.studentName = name;
+    state.currentIndex = 0;
+    state.answers = [];
+    renderTheory();
+  });
+}
+
+// ============================================================
+//  СТРАНИЦА 1: ТЕОРИЯ
+// ============================================================
+function renderTheory() {
+  if (state.currentIndex >= LESSONS.length) { renderFinalTest(); return; }
+  const lesson = LESSONS[state.currentIndex];
+  const progress = (state.currentIndex / (LESSONS.length + 1)) * 100;
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="module-meta">
+        <span class="name-badge">👤 ${escapeHtml(state.studentName)}</span>
+        <span class="module-counter">Модуль ${state.currentIndex + 1} из ${LESSONS.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <span class="step-label">Шаг 1 — Теория</span>
+      <span class="tag ${lesson.tagClass}">${lesson.tag}</span>
+      <div class="theory">${lesson.theory}</div>
+      <div class="actions">
+        <button class="btn" id="toTaskBtn">Перейти к заданию →</button>
+      </div>
+    </div>`;
+
+  document.getElementById('toTaskBtn').addEventListener('click', renderTask);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+//  СТРАНИЦА 2: ЗАДАНИЕ
+// ============================================================
+function renderTask() {
+  const lesson = LESSONS[state.currentIndex];
+  const progress = (state.currentIndex / (LESSONS.length + 1)) * 100;
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="module-meta">
+        <span class="name-badge">👤 ${escapeHtml(state.studentName)}</span>
+        <span class="module-counter">Модуль ${state.currentIndex + 1} из ${LESSONS.length}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <span class="step-label">Шаг 2 — Задание</span>
+      <span class="tag ${lesson.tagClass}">${lesson.tag}</span>
+      <h2>Проверьте себя</h2>
+      <h3 style="font-weight:500; color:#2d3748; margin-bottom:14px;">${escapeHtml(lesson.question)}</h3>
+      <div id="options">
+        ${lesson.options.map((opt, i) => `<label class="option" data-index="${i}">${escapeHtml(opt)}</label>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <div class="actions">
+        <button class="btn" id="checkBtn" disabled>Проверить</button>
+        <button class="btn btn-secondary hidden" id="nextBtn">
+          ${state.currentIndex + 1 === LESSONS.length ? 'К итоговому тесту →' : 'Далее →'}
+        </button>
+      </div>
+    </div>`;
+
+  let selected = null;
+  let locked = false;
+  const options = document.querySelectorAll('.option');
+  const checkBtn = document.getElementById('checkBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const feedback = document.getElementById('feedback');
+
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      if (locked) return;
+      options.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      selected = parseInt(opt.dataset.index);
+      checkBtn.disabled = false;
+    });
+  });
+
+  checkBtn.addEventListener('click', () => {
+    if (selected === null) return;
+    locked = true;
+    const isCorrect = selected === lesson.correct;
+    state.answers.push({ correct: isCorrect, lessonIndex: state.currentIndex, selected });
+
+    options.forEach((opt, i) => {
+      opt.classList.add('locked');
+      if (i === lesson.correct) opt.classList.add('correct');
+      else if (i === selected) opt.classList.add('wrong');
+    });
+
+    feedback.className = 'feedback show ' + (isCorrect ? 'success' : 'error');
+    feedback.innerHTML = `
+      <span class="fb-title">${isCorrect ? '✅ Верно!' : '❌ Неверно'}</span>
+      ${isCorrect ? '' : `Правильный ответ: <b>${escapeHtml(lesson.options[lesson.correct])}</b>.<br><br>`}
+      <b>Почему:</b> ${escapeHtml(lesson.explanation)}`;
+
+    checkBtn.classList.add('hidden');
+    nextBtn.classList.remove('hidden');
+    nextBtn.focus();
+  });
+
+  nextBtn.addEventListener('click', () => {
+    state.currentIndex++;
+    renderTheory();
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+//  ИТОГОВЫЙ ТЕСТ
+// ============================================================
+function renderFinalTest() {
+  const progress = (LESSONS.length / (LESSONS.length + 1)) * 100;
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="module-meta">
+        <span class="name-badge">👤 ${escapeHtml(state.studentName)}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <h1>🎓 Итоговый тест</h1>
+      <p class="subtitle">Все вопросы курса. Кнопка «Завершить» станет активной, когда вы ответите на все вопросы.</p>
+      <div id="questions">
+        ${LESSONS.map((lesson, idx) => `
+          <div style="margin-bottom:30px;" data-q="${idx}">
+            <div class="review-question">${idx + 1}. ${escapeHtml(lesson.question)}</div>
+            ${lesson.options.map((opt, i) => `<label class="option" data-q="${idx}" data-index="${i}">${escapeHtml(opt)}</label>`).join('')}
+          </div>`).join('')}
+      </div>
+      <div class="actions">
+        <button class="btn" id="submitTest" disabled>Завершить тест</button>
+      </div>
+    </div>`;
+
+  const testAnswers = new Array(LESSONS.length).fill(null);
+  const options = document.querySelectorAll('.option');
+  const submitBtn = document.getElementById('submitTest');
+
+  options.forEach(opt => {
+    opt.addEventListener('click', () => {
+      const q = parseInt(opt.dataset.q);
+      const i = parseInt(opt.dataset.index);
+      document.querySelectorAll(`.option[data-q="${q}"]`).forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      testAnswers[q] = i;
+      submitBtn.disabled = testAnswers.includes(null);
+    });
+  });
+
+  submitBtn.addEventListener('click', () => renderResults(testAnswers));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ============================================================
+//  РЕЗУЛЬТАТЫ
+// ============================================================
+function renderResults(testAnswers) {
+  let correctCount = 0;
+  LESSONS.forEach((lesson, i) => { if (testAnswers[i] === lesson.correct) correctCount++; });
+  const total = LESSONS.length;
+  const percent = Math.round((correctCount / total) * 100);
+
+  const savedResults = JSON.parse(localStorage.getItem('sql_results') || '[]');
+  savedResults.push({ name: state.studentName, score: correctCount, total, percent, date: new Date().toISOString() });
+  localStorage.setItem('sql_results', JSON.stringify(savedResults));
+
+  app.innerHTML = `
+    <div class="card">
+      <span class="name-badge">👤 ${escapeHtml(state.studentName)}</span>
+      <div class="score-big">
+        <div class="value">${percent}%</div>
+        <div class="label">${correctCount} из ${total} правильных ответов</div>
+      </div>
+      <div class="results-grid">
+        <div class="stat"><div class="stat-value">${correctCount}</div><div class="stat-label">Верно</div></div>
+        <div class="stat"><div class="stat-value">${total - correctCount}</div><div class="stat-label">Ошибок</div></div>
+        <div class="stat"><div class="stat-value">${total}</div><div class="stat-label">Всего вопросов</div></div>
+      </div>
+      <h2>📋 Разбор ответов</h2>
+      ${LESSONS.map((lesson, i) => {
+        const isCorrect = testAnswers[i] === lesson.correct;
+        return `
+          <div class="review-item ${isCorrect ? 'correct-item' : 'wrong-item'}">
+            <div class="review-question">${isCorrect ? '✅' : '❌'} ${i + 1}. ${escapeHtml(lesson.question)}</div>
+            <div class="review-detail"><span class="label">Ваш ответ:</span> ${escapeHtml(lesson.options[testAnswers[i]])}</div>
+            ${!isCorrect ? `<div class="review-detail"><span class="label">Правильный ответ:</span> ${escapeHtml(lesson.options[lesson.correct])}</div>` : ''}
+            <div class="review-explain"><b>Пояснение:</b> ${escapeHtml(lesson.explanation)}</div>
+          </div>`;
+      }).join('')}
+      <div class="actions">
+        <button class="btn btn-secondary" id="restartBtn">Пройти заново</button>
+      </div>
+    </div>`;
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    state.studentName = '';
+    state.currentIndex = 0;
+    state.answers = [];
+    renderStart();
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+renderStart();
+</script>
+</body>
+</html>
